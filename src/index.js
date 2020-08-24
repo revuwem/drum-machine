@@ -58,12 +58,12 @@ const bankOne = [
 ];
 
 const Controls = (props) => {
-  return(
+  return (
     <div id="controls">Controls</div>
   );
 }
 
-const Screen = ({text}) => {
+const Screen = ({ text }) => {
   return (
     <div id="screen">
       <p>{text}</p>
@@ -71,21 +71,73 @@ const Screen = ({text}) => {
   );
 };
 
-class DrumPad extends React.Component{
-  constructor(props){
-    super(props); 
+class DrumPad extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = {
+      style: null
+    }
+
+    this.handleClick = this.handleClick.bind(this);
+    this.activatePad = this.activatePad.bind(this);
+  }
+
+  componentDidMount() {
+    document.addEventListener('keypress', this.handleKeyPress);
+  }
+
+  componentWillUnmount() {
+    document.removeEventListener('keypress', this.handleKeyPress);
+  }
+
+  handleKeyPress = (e) => {
+    if (e.key.toUpperCase() === this.props.keyData.keyTrigger) {
+      this.playSound(e.key.toUpperCase());
+    }
+  }
+
+  handleClick(e) {
+    this.playSound(document.getElementById(e.target.id).firstChild.id);
+  }
+
+  activatePad() {
+    const activeStyle = {
+      boxShadow: "inset -3px -7px 5px #FAFAFA, inset 5px 5px 7px rgba(0, 0, 0, 0.1)"
+    };
+
+    if(!this.state.style){
+      this.setState({
+        style: activeStyle
+      });
+    }else{
+      this.setState({
+        style: null
+      });
+    }
     
-  }  
-  
-  render(){
-    let {keyCode, id, keyTrigger, url} = this.props.keyData;      
-    let {className, handleClick} = this.props;
+  }
+
+  playSound = (id) => {
+    const sound = document.getElementById(id);
+    this.activatePad();
+    sound.currentTime = 0;
+    sound.play();
+    setTimeout(() => this.activatePad(), 100);
+    this.props.updateDisplay(sound.parentElement.id);
+  }
+
+  render() {
+    let { keyCode, id, keyTrigger, url } = this.props.keyData;
+
     return (
-      <button 
-        id={id} 
-        className={className} 
-        onClick={()=>handleClick(id, keyTrigger)}>
-          <audio id={keyTrigger} src={url} className="clip"/>
+      <button
+        id={id}
+        className="drum-pad"
+        key={keyCode}
+        onClick={(e) => this.handleClick(e)}
+        style={this.state.style}>
+        <audio id={keyTrigger} src={url} className="clip" />
         {keyTrigger}
       </button>
     );
@@ -93,76 +145,44 @@ class DrumPad extends React.Component{
 }
 
 class Keyboard extends React.Component {
-  constructor(props){
-    super(props);    
-  } 
-  
-  render(){
+  constructor(props) {
+    super(props);
+  }
+
+  render() {
     return (
       <div id="keyboard">
-        {bankOne.map(key => <DrumPad 
-                              key={key.keyTrigger}
-                              className = {this.props.keyTrigger === key.id ? "drum-pad active" : "drum-pad"}
-                              keyData={key} 
-                              handleClick={this.props.handleClick} 
-                            />
-                    )}          
+        {
+          bankOne.map(key => <DrumPad keyData={key} updateDisplay={this.props.updateDisplay} />)
+        }
       </div>
     );
   }
 };
 
 class App extends React.Component {
-  constructor(props){
-    super(props); 
+  constructor(props) {
+    super(props);
 
-    this.state={
-        keyTrigger: null,
-        display: 'choose your bit'
-    }  
-
-    this.handleKeyPress = this.handleKeyPress.bind(this);
-    this.handleClick=this.handleClick.bind(this);   
-  }   
-
-  componentDidMount(){
-    document.addEventListener('keypress', this.handleKeyPress);
-  }
-
-  componentWillUnmount(){
-    document.removeEventListener('keypress', this.handleKeyPress);
-  }
-
-  handleKeyPress(e){    
-    if(document.getElementById(e.key.toUpperCase())){
-      let id=document.getElementById(e.key.toUpperCase()).parentNode.id;
-      let keyTrigger = e.key.toUpperCase();
-      this.handleClick(id, keyTrigger);
+    this.state = {
+      keyTrigger: null,
+      display: 'choose your bit'
     }
+
+    this.updateDisplay = this.updateDisplay.bind(this);
   }
 
-  handleClick(id, keyTrigger){          
-      this.setState({
-          keyTrigger: id,
-          display: id
-      });        
-      this.playSound(keyTrigger); 
-      setTimeout(() => this.setState({keyTrigger: null}), 100);
-  }  
-   
-   playSound(key){      
-    const sound = document.getElementById(key);
-    if(sound){
-      sound.currentTime=0;
-      sound.play(); 
-    } else return;       
-  } 
+  updateDisplay(text) {
+    this.setState({
+      display: text
+    })
+  }
 
-  render(){
+  render() {
     return (
       <div id="display" className="drum-machine-display">
-        <Screen text={this.state.display}/>
-        <Keyboard handleClick={this.handleClick} keyTrigger={this.state.keyTrigger}/>
+        <Screen text={this.state.display} />
+        <Keyboard updateDisplay={this.updateDisplay} />
       </div>
     );
   };
@@ -171,4 +191,3 @@ class App extends React.Component {
 
 
 ReactDOM.render(<App />, document.getElementById("drum-machine"));
-  
